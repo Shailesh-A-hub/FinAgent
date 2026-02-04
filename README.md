@@ -1,0 +1,2 @@
+🏦 FinAgent – Voice‑First Financial Agent with VLM + LAM
+FinAgent is a production‑grade financial automation prototype that combines voice commands, Vision Language Models (VLM), and Large Action Models (LAM) with a 4‑layer Conscious Pause safety system. It was built for the Techfest IIT‑Bombay FinAgent challenge to show how future banking agents should work: transparent, controllable, and adaptive.
