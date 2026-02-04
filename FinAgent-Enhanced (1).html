@@ -1,0 +1,1411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinAgent - Voice Banking with Auto TTS & Profile</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 15px;
+        }
+
+        .main-wrapper {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 15px;
+            max-width: 1800px;
+            margin: 0 auto;
+            height: calc(100vh - 30px);
+        }
+
+        @media (max-width: 1200px) {
+            .main-wrapper {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+        }
+
+        /* ============ LEFT SIDEBAR: COMMAND CENTER ============ */
+        .command-center {
+            background: linear-gradient(180deg, rgba(15, 12, 41, 0.8), rgba(48, 43, 99, 0.8));
+            border: 2px solid #00d4ff;
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            box-shadow: 0 8px 32px rgba(0, 212, 255, 0.1);
+        }
+
+        .header-top {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid rgba(0, 212, 255, 0.3);
+            padding-bottom: 15px;
+        }
+
+        .header-top h1 {
+            font-size: 24px;
+            background: linear-gradient(45deg, #00d4ff, #7b2cbf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 3px;
+        }
+
+        .header-top p {
+            font-size: 11px;
+            color: #00d4ff;
+            letter-spacing: 1px;
+        }
+
+        /* Voice Chat Box */
+        .voice-chat-container {
+            margin-bottom: 20px;
+        }
+
+        .chat-title {
+            font-size: 12px;
+            color: #00d4ff;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .chat-box {
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid #00d4ff;
+            border-radius: 10px;
+            padding: 12px;
+            min-height: 120px;
+            max-height: 180px;
+            overflow-y: auto;
+            margin-bottom: 8px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .chat-message {
+            margin-bottom: 8px;
+            padding: 8px;
+            border-radius: 6px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .msg-user {
+            background: rgba(123, 44, 191, 0.3);
+            border-left: 3px solid #7b2cbf;
+            color: #e0bbff;
+        }
+
+        .msg-agent {
+            background: rgba(0, 212, 255, 0.15);
+            border-left: 3px solid #00d4ff;
+            color: #00d4ff;
+        }
+
+        .msg-system {
+            background: rgba(76, 175, 80, 0.15);
+            border-left: 3px solid #4caf50;
+            color: #90ee90;
+        }
+
+        .msg-warning {
+            background: rgba(255, 152, 0, 0.15);
+            border-left: 3px solid #ff9800;
+            color: #ffb74d;
+        }
+
+        .mic-button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(45deg, #ff006e, #d62828);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .mic-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 0, 110, 0.5);
+        }
+
+        .mic-button.listening {
+            background: linear-gradient(45deg, #00d4ff, #7b2cbf);
+            animation: pulse 0.6s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(0, 212, 255, 0.7); }
+            50% { box-shadow: 0 0 0 15px rgba(0, 212, 255, 0); }
+        }
+
+        .listening-text {
+            display: none;
+            font-size: 11px;
+            color: #ff006e;
+            text-align: center;
+            margin-top: 5px;
+            font-weight: 600;
+        }
+
+        .listening-text.active {
+            display: block;
+        }
+
+        .command-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #00d4ff;
+            background: rgba(0, 212, 255, 0.05);
+            color: #fff;
+            border-radius: 6px;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+
+        .command-input:focus {
+            outline: none;
+            background: rgba(0, 212, 255, 0.15);
+            box-shadow: 0 0 12px rgba(0, 212, 255, 0.5);
+        }
+
+        .command-input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        /* Workflow Tabs */
+        .workflow-tabs {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 6px;
+            margin-bottom: 15px;
+        }
+
+        .workflow-tab {
+            padding: 10px;
+            background: rgba(0, 212, 255, 0.1);
+            color: #00d4ff;
+            border: 2px solid #00d4ff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 10px;
+            font-weight: 700;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .workflow-tab:hover {
+            background: rgba(0, 212, 255, 0.2);
+        }
+
+        .workflow-tab.active {
+            background: linear-gradient(45deg, #00d4ff, #0099cc);
+            color: #000;
+            border-color: #fff;
+        }
+
+        /* Form Inputs */
+        .form-section {
+            display: none;
+        }
+
+        .form-section.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 10px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 11px;
+            color: #00d4ff;
+            font-weight: 700;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #00d4ff;
+            background: rgba(0, 212, 255, 0.05);
+            color: #fff;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            background: rgba(0, 212, 255, 0.15);
+            border-color: #7b2cbf;
+        }
+
+        .form-select option {
+            background: #302b63;
+            color: #fff;
+        }
+
+        .action-button {
+            width: 100%;
+            padding: 10px;
+            background: linear-gradient(45deg, #00d4ff, #0099cc);
+            color: #000;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .action-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 212, 255, 0.4);
+        }
+
+        /* Profile Card Display */
+        .profile-display {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid #00d4ff;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            font-size: 11px;
+        }
+
+        .profile-field {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .profile-field:last-child {
+            border-bottom: none;
+        }
+
+        .profile-label {
+            color: #7b2cbf;
+            font-weight: 600;
+        }
+
+        .profile-value {
+            color: #00d4ff;
+            font-weight: 700;
+        }
+
+        /* ============ RIGHT PANEL: DASHBOARD ============ */
+        .dashboard {
+            background: linear-gradient(180deg, rgba(15, 12, 41, 0.8), rgba(48, 43, 99, 0.8));
+            border: 2px solid #00d4ff;
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 212, 255, 0.1);
+        }
+
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 15px;
+            border-bottom: 2px solid rgba(0, 212, 255, 0.3);
+            padding-bottom: 10px;
+        }
+
+        .dashboard-header h2 {
+            font-size: 16px;
+            color: #00d4ff;
+            margin-bottom: 3px;
+        }
+
+        .dashboard-subtitle {
+            font-size: 10px;
+            color: #aaa;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        @media (max-width: 1200px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel-card {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 212, 255, 0.5);
+            border-radius: 10px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-title {
+            font-size: 11px;
+            color: #00d4ff;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .logs-container {
+            flex: 1;
+            overflow-y: auto;
+            font-size: 11px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .log-item {
+            padding: 6px;
+            margin-bottom: 4px;
+            border-radius: 4px;
+            border-left: 2px solid;
+            animation: slideIn 0.2s ease-out;
+        }
+
+        .log-info {
+            border-left-color: #00d4ff;
+            background: rgba(0, 212, 255, 0.1);
+            color: #00d4ff;
+        }
+
+        .log-success {
+            border-left-color: #4caf50;
+            background: rgba(76, 175, 80, 0.1);
+            color: #4caf50;
+        }
+
+        .log-error {
+            border-left-color: #f44336;
+            background: rgba(244, 67, 54, 0.1);
+            color: #f44336;
+        }
+
+        .log-warning {
+            border-left-color: #ff9800;
+            background: rgba(255, 152, 0, 0.1);
+            color: #ffb74d;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+
+        .status-active {
+            background: #4caf50;
+            animation: blink 0.8s infinite;
+        }
+
+        .status-idle {
+            background: #ff9800;
+        }
+
+        @keyframes blink {
+            0%, 49%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* ============ CONSCIOUS PAUSE MODAL ============ */
+        .pause-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .pause-modal.show {
+            display: flex;
+        }
+
+        .pause-card {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border: 4px solid #ff006e;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 700px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideUp 0.4s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .pause-icon {
+            font-size: 48px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .pause-title {
+            font-size: 26px;
+            color: #ff006e;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .pause-message {
+            font-size: 18px;
+            color: #fff;
+            text-align: center;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+
+        .risk-section {
+            background: rgba(0, 212, 255, 0.1);
+            border: 2px solid #00d4ff;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .risk-label {
+            font-size: 12px;
+            color: #00d4ff;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .risk-bar {
+            width: 100%;
+            height: 24px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid #00d4ff;
+            margin-bottom: 8px;
+        }
+
+        .risk-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4caf50, #ffeb3b, #ff6b6b);
+            width: 30%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            color: #000;
+            transition: width 0.3s;
+        }
+
+        .risk-text {
+            font-size: 11px;
+            color: #aaa;
+        }
+
+        .transaction-details {
+            background: rgba(123, 44, 191, 0.1);
+            border: 1px solid #7b2cbf;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(123, 44, 191, 0.3);
+            font-size: 13px;
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            color: #7b2cbf;
+            font-weight: 600;
+        }
+
+        .detail-value {
+            color: #fff;
+            font-weight: 700;
+        }
+
+        .amount-edit-section {
+            background: rgba(76, 175, 80, 0.1);
+            border: 2px solid #4caf50;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
+        }
+
+        .amount-label {
+            font-size: 11px;
+            color: #4caf50;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .amount-input-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .amount-input-group input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #4caf50;
+            background: rgba(76, 175, 80, 0.1);
+            color: #fff;
+            border-radius: 5px;
+            font-weight: 700;
+        }
+
+        .amount-input-group input:focus {
+            outline: none;
+            background: rgba(76, 175, 80, 0.2);
+        }
+
+        .voice-amount-btn {
+            padding: 8px 12px;
+            background: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 11px;
+        }
+
+        .voice-amount-btn:hover {
+            background: #45a049;
+        }
+
+        .approval-section {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 2px solid rgba(0, 212, 255, 0.3);
+        }
+
+        .approval-instruction {
+            text-align: center;
+            font-size: 12px;
+            color: #ff006e;
+            font-weight: 700;
+            margin-bottom: 12px;
+            animation: pulse-text 0.8s infinite;
+        }
+
+        @keyframes pulse-text {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .approval-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .approve-btn {
+            padding: 12px;
+            background: rgba(76, 175, 80, 0.2);
+            border: 2px solid #4caf50;
+            color: #4caf50;
+            border-radius: 6px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .approve-btn:hover {
+            background: rgba(76, 175, 80, 0.4);
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.5);
+        }
+
+        .reject-btn {
+            padding: 12px;
+            background: rgba(244, 67, 54, 0.2);
+            border: 2px solid #f44336;
+            color: #f44336;
+            border-radius: 6px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .reject-btn:hover {
+            background: rgba(244, 67, 54, 0.4);
+            box-shadow: 0 0 15px rgba(244, 67, 54, 0.5);
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 212, 255, 0.05);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #00d4ff;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #0099cc;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-wrapper">
+        <!-- LEFT: COMMAND CENTER -->
+        <div class="command-center">
+            <div class="header-top">
+                <h1>🏦 FinAgent</h1>
+                <p>AI Banking with Voice & Auto TTS</p>
+            </div>
+
+            <!-- Voice Chat -->
+            <div class="voice-chat-container">
+                <div class="chat-title">💬 Conversation</div>
+                <div class="chat-box" id="chatBox"></div>
+                <button class="mic-button" id="micButton">
+                    <span>🎙️</span>
+                    <span id="micText">Listen</span>
+                </button>
+                <div class="listening-text" id="listeningText">🎤 Listening... Speak now!</div>
+                <input 
+                    type="text" 
+                    class="command-input" 
+                    id="commandInput" 
+                    placeholder="Or type command..."
+                />
+            </div>
+
+            <!-- Workflow Selection -->
+            <div style="margin-bottom: 15px;">
+                <div class="chat-title">📋 Workflows</div>
+                <div class="workflow-tabs">
+                    <div class="workflow-tab active" onclick="selectWorkflow('bill')">💳 Bill</div>
+                    <div class="workflow-tab" onclick="selectWorkflow('gold')">💛 Gold</div>
+                    <div class="workflow-tab" onclick="selectWorkflow('profile')">👤 Profile</div>
+                </div>
+            </div>
+
+            <!-- BILL PAY FORM -->
+            <div class="form-section active" id="billForm">
+                <div class="form-group">
+                    <label class="form-label">Biller</label>
+                    <select class="form-select" id="billerSelect">
+                        <option value="">Select...</option>
+                        <option value="Adani Electricity">Adani Electricity</option>
+                        <option value="Airtel Postpaid">Airtel Postpaid</option>
+                        <option value="Jio Fiber">Jio Fiber</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Amount (₹)</label>
+                    <input type="number" class="form-input" id="billAmount" placeholder="Amount">
+                </div>
+                <button class="action-button" onclick="executeBillPay()">💳 Pay</button>
+            </div>
+
+            <!-- GOLD BUY FORM -->
+            <div class="form-section" id="goldForm">
+                <div class="form-group">
+                    <label class="form-label">Gold Type</label>
+                    <select class="form-select" id="goldType">
+                        <option value="">Select...</option>
+                        <option value="22K Gold">22K Gold</option>
+                        <option value="24K Gold">24K Gold</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Amount (₹)</label>
+                    <input type="number" class="form-input" id="goldAmount" placeholder="Amount">
+                </div>
+                <button class="action-button" onclick="executeGoldBuy()">💛 Buy</button>
+            </div>
+
+            <!-- PROFILE SECTION -->
+            <div class="form-section" id="profileForm">
+                <div class="profile-display">
+                    <div class="profile-field">
+                        <span class="profile-label">👤 Name:</span>
+                        <span class="profile-value" id="displayName">John Doe</span>
+                    </div>
+                    <div class="profile-field">
+                        <span class="profile-label">📱 Phone:</span>
+                        <span class="profile-value" id="displayPhone">+91 9876543210</span>
+                    </div>
+                    <div class="profile-field">
+                        <span class="profile-label">✉️ Email:</span>
+                        <span class="profile-value" id="displayEmail">john@email.com</span>
+                    </div>
+</div>
+
+                <div class="form-group">
+                    <label class="form-label">Name</label>
+                    <input type="text" class="form-input" id="profileName" placeholder="Full Name">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Phone</label>
+                    <input type="tel" class="form-input" id="profilePhone" placeholder="+91">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-input" id="profileEmail" placeholder="Email">
+                </div>
+<button class="action-button" onclick="updateProfile()">✅ Update Profile</button>
+            </div>
+        </div>
+
+        <!-- RIGHT: DASHBOARD -->
+        <div class="dashboard">
+            <div class="dashboard-header">
+                <h2>📊 Live Dashboard</h2>
+                <p class="dashboard-subtitle">Real-time monitoring</p>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="panel-card">
+                    <div class="panel-title">⚙️ System Logs</div>
+                    <div class="logs-container" id="systemLogs"></div>
+                </div>
+
+                <div class="panel-card">
+                    <div class="panel-title">📈 Agent Status</div>
+                    <div style="flex: 1; display: flex; flex-direction: column; justify-content: space-around;">
+                        <div style="font-size: 11px;">
+                            <div>
+                                <span class="status-indicator status-idle"></span>
+                                <span>🧠 Brain:</span>
+                                <span style="color: #ffb74d;">Ready</span>
+                            </div>
+                            <div style="margin-top: 6px;">
+                                <span class="status-indicator status-idle"></span>
+                                <span>👁️ Vision:</span>
+                                <span style="color: #ffb74d;">Standby</span>
+                            </div>
+                            <div style="margin-top: 6px;">
+                                <span class="status-indicator status-idle"></span>
+                                <span>🤲 Hands:</span>
+                                <span style="color: #ffb74d;">Ready</span>
+                            </div>
+                            <div style="margin-top: 6px;">
+                                <span class="status-indicator status-active"></span>
+                                <span>⏸️ Pause:</span>
+                                <span style="color: #4caf50;">Active</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-card">
+                    <div class="panel-title">🎯 Progress</div>
+                    <div style="flex: 1; display: flex; align-items: center; justify-content: center;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 32px; color: #00d4ff; font-weight: 700; margin-bottom: 6px;" id="progressPercent">0%</div>
+                            <div style="font-size: 11px; color: #aaa;" id="progressText">Idle</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-card">
+                    <div class="panel-title">📜 History</div>
+                    <div class="logs-container" id="transactionHistory"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONSCIOUS PAUSE MODAL -->
+    <div class="pause-modal" id="pauseModal">
+        <div class="pause-card">
+            <div class="pause-icon">🔐</div>
+            <div class="pause-title">CONSCIOUS PAUSE</div>
+            <div class="pause-message" id="pauseMessage">Ready to proceed</div>
+
+            <div class="risk-section">
+                <div class="risk-label">🎯 Risk Score</div>
+                <div class="risk-bar">
+                    <div class="risk-fill" id="riskFill" style="width: 35%;">35%</div>
+                </div>
+                <div class="risk-text" id="riskText">🟡 LOW-MEDIUM RISK</div>
+            </div>
+
+            <div class="transaction-details" id="transactionDetails"></div>
+
+            <div class="amount-edit-section">
+                <div class="amount-label">💰 Edit Amount</div>
+                <div class="amount-input-group">
+                    <input type="number" id="editAmount" placeholder="New amount">
+                    <button class="voice-amount-btn" onclick="voiceEditAmount()">🎤</button>
+                </div>
+            </div>
+
+            <div class="approval-section">
+                <div class="approval-instruction">
+                    🎤 Say "APPROVE" or "REJECT"
+                </div>
+                <div class="approval-buttons">
+                    <button class="approve-btn" onclick="approveTransaction()">✓ APPROVE</button>
+                    <button class="reject-btn" onclick="rejectTransaction()">✗ REJECT</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============ SPEECH RECOGNITION & TTS ============
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = 'en-US';
+        recognition.continuous = false; // Auto-stop after silence
+        recognition.interimResults = false;
+
+        const synth = window.speechSynthesis;
+
+        let isListening = false;
+        let currentTransaction = null;
+        let userProfile = {
+            name: 'John Doe',
+            phone: '+91 9876543210',
+            email: 'john@email.com',
+            account: 'Savings'
+        };
+
+        // ============ DOM ELEMENTS ============
+        const chatBox = document.getElementById('chatBox');
+        const micButton = document.getElementById('micButton');
+        const commandInput = document.getElementById('commandInput');
+        const pauseModal = document.getElementById('pauseModal');
+        const systemLogs = document.getElementById('systemLogs');
+
+        // ============ INITIALIZATION ============
+        micButton.addEventListener('click', startListening);
+        commandInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') executeCommand();
+        });
+
+        updateProfileDisplay();
+        addChatMessage('Agent initialized. Say command or press Enter', 'agent');
+        speakText('Agent ready. Say your command.');
+        addLog('✅ FinAgent initialized', 'success');
+
+        // ============ TEXT-TO-SPEECH ============
+        function speakText(text) {
+            synth.cancel(); // Stop any ongoing speech
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+            utterance.volume = 1.0;
+            synth.speak(utterance);
+        }
+
+        // ============ VOICE INPUT WITH AUTO-STOP ============
+        function startListening() {
+            chatBox.innerHTML = '';
+            isListening = true;
+            micButton.classList.add('listening');
+            document.getElementById('listeningText').classList.add('active');
+            document.getElementById('micText').textContent = 'Listening...';
+            recognition.start();
+            addLog('🎤 Listening for command...', 'info');
+            speakText('I am listening');
+        }
+
+        recognition.onresult = (event) => {
+            let transcript = '';
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                transcript += event.results[i][0].transcript + ' ';
+            }
+            commandInput.value = transcript.trim();
+        };
+
+        recognition.onend = () => {
+            isListening = false;
+            micButton.classList.remove('listening');
+            document.getElementById('listeningText').classList.remove('active');
+            document.getElementById('micText').textContent = 'Listen';
+            
+            // Auto-execute if command was received
+            if (commandInput.value.trim()) {
+                setTimeout(executeCommand, 300);
+            }
+        };
+
+        recognition.onerror = (event) => {
+            addLog(`⚠️ Error: ${event.error}`, 'error');
+            speakText('Sorry, I did not catch that. Please try again.');
+        };
+
+        // ============ COMMAND EXECUTION ============
+        function executeCommand() {
+            const cmd = commandInput.value.trim();
+            if (!cmd) {
+                speakText('Please say a command');
+                return;
+            }
+
+            addChatMessage(cmd, 'user');
+            parseCommand(cmd);
+            commandInput.value = '';
+        }
+
+        // ============ COMMAND PARSING ============
+        function parseCommand(cmd) {
+            const lower = cmd.toLowerCase();
+
+
+            // ===== Voice/Text profile updates (no password required) =====
+            let m;
+            m = cmd.match(/(?:change|update|set)\s+name\s+(?:to\s+)?(.+)/i) || cmd.match(/my\s+name\s+is\s+(.+)/i);
+            if (m && m[1]) {
+                const newName = m[1].trim().replace(/[.]+$/, '');
+                selectWorkflow('profile');
+                document.getElementById('profileName').value = newName;
+                addChatMessage(`👤 Updating name to ${newName}...`, 'agent');
+                addLog('📝 Profile voice command: change name', 'info');
+                updateProfile();
+                return;
+            }
+
+            m = cmd.match(/(?:change|update|set)\s+(?:phone|mobile|number)\s+(?:to\s+)?([+\d][+\d\s-]{7,})/i);
+            if (m && m[1]) {
+                const newPhone = m[1].trim();
+                selectWorkflow('profile');
+                document.getElementById('profilePhone').value = newPhone;
+                addChatMessage('📱 Updating phone...', 'agent');
+                addLog('📝 Profile voice command: change phone', 'info');
+                updateProfile();
+                return;
+            }
+
+            m = cmd.match(/(?:change|update|set)\s+email\s+(?:to\s+)?([\w.+-]+@[\w.-]+\.[A-Za-z]{2,})/i);
+            if (m && m[1]) {
+                const newEmail = m[1].trim();
+                selectWorkflow('profile');
+                document.getElementById('profileEmail').value = newEmail;
+                addChatMessage('✉️ Updating email...', 'agent');
+                addLog('📝 Profile voice command: change email', 'info');
+                updateProfile();
+                return;
+            }
+
+            if (lower.includes('bill') || lower.includes('pay')) {
+                const amount = cmd.match(/(\d+)/);
+                let biller = (lower.match(/(adani|jio|bsnl|water|electricity)/) || [])[0];
+                biller = biller ? (biller.charAt(0).toUpperCase() + biller.slice(1) + (biller==='jio' ? ' Fibre' : biller==='bsnl' ? '' : biller==='adani' ? ' Electricity' : '')) : 'Adani Electricity';
+                
+                selectWorkflow('bill');
+                document.getElementById('billerSelect').value = biller;
+                document.getElementById('billAmount').value = amount ? amount[1] : '';
+                
+                addChatMessage(`Processing: Pay ₹${amount ? amount[1] : '?'} to ${biller}`, 'agent');
+                addLog(`📝 Bill payment parsed`, 'info');
+                speakText(`Ready to pay rupees ${amount ? amount[1] : 'unknown'} to ${biller}. Please press enter or say confirm.`);
+                
+                setTimeout(() => executeBillPay(), 800);
+            } 
+            else if (lower.includes('gold') || lower.includes('invest')) {
+                const amount = cmd.match(/(\d+)/);
+                
+                selectWorkflow('gold');
+                document.getElementById('goldType').value = '22K Gold';
+                document.getElementById('goldAmount').value = amount ? amount[1] : '';
+                
+                addChatMessage(`Processing: Invest ₹${amount ? amount[1] : '?'} in Gold`, 'agent');
+                addLog(`📝 Gold investment parsed`, 'info');
+                speakText(`Ready to invest rupees ${amount ? amount[1] : 'unknown'} in gold. Please press enter or say confirm.`);
+                
+                setTimeout(() => executeGoldBuy(), 800);
+            }
+            else if (lower.includes('profile') || lower.includes('update')) {
+                selectWorkflow('profile');
+                addChatMessage('Opened profile section. Say "change name", "change phone", "change email", or "change password"', 'agent');
+                speakText('Profile section opened. You can update your details or change password. What would you like to do?');
+            }
+            else {
+                addChatMessage('Command not recognized. Try "Pay 1500 to Adani" or "Invest 5000 in Gold"', 'agent');
+                speakText('Command not understood. Please say pay or invest followed by amount.');
+                addLog('❌ Command not recognized', 'error');
+            }
+        }
+
+        // ============ WORKFLOW SELECTION ============
+        function selectWorkflow(type) {
+            document.querySelectorAll('.workflow-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.form-section').forEach(f => f.classList.remove('active'));
+
+            if (type === 'bill') {
+                document.querySelectorAll('.workflow-tab')[0].classList.add('active');
+                document.getElementById('billForm').classList.add('active');
+            } else if (type === 'gold') {
+                document.querySelectorAll('.workflow-tab')[1].classList.add('active');
+                document.getElementById('goldForm').classList.add('active');
+            } else if (type === 'profile') {
+                document.querySelectorAll('.workflow-tab')[2].classList.add('active');
+                document.getElementById('profileForm').classList.add('active');
+            }
+        }
+
+        // ============ TRANSACTION EXECUTION ============
+        function executeBillPay() {
+            const biller = document.getElementById('billerSelect').value;
+            const amount = document.getElementById('billAmount').value;
+
+            if (!biller || !amount) {
+                addChatMessage('⚠️ Please select biller and amount', 'agent');
+                speakText('Please select biller and amount');
+                return;
+            }
+
+            currentTransaction = {
+                type: 'BILL',
+                biller,
+                amount: parseInt(amount),
+                timestamp: new Date().toLocaleTimeString()
+            };
+
+            addLog(`🚀 Bill Payment: ${biller}, ₹${amount}`, 'info');
+            showConsciousPause();
+        }
+
+        function executeGoldBuy() {
+            const goldType = document.getElementById('goldType').value;
+            const amount = document.getElementById('goldAmount').value;
+
+            if (!goldType || !amount) {
+                addChatMessage('⚠️ Please select gold type and amount', 'agent');
+                speakText('Please select gold type and amount');
+                return;
+            }
+
+            currentTransaction = {
+                type: 'GOLD',
+                goldType,
+                amount: parseInt(amount),
+                timestamp: new Date().toLocaleTimeString()
+            };
+
+            addLog(`🚀 Gold Investment: ${goldType}, ₹${amount}`, 'info');
+            showConsciousPause();
+        }
+
+        function updateProfile() {
+            const name = document.getElementById('profileName').value || userProfile.name;
+            const phone = document.getElementById('profilePhone').value || userProfile.phone;
+            const email = document.getElementById('profileEmail').value || userProfile.email;
+
+            userProfile = { name, phone, email };
+            updateProfileDisplay();
+
+            // Keep the conscious-pause approval flow, but no password/account
+            currentTransaction = {
+                type: 'PROFILE',
+                name,
+                phone,
+                email,
+                amount: 0,
+                timestamp: new Date().toLocaleTimeString()
+            };
+
+            addLog(`🚀 Profile Update: ${name}`, 'info');
+            showConsciousPause();
+        }
+
+        // ============ CONSCIOUS PAUSE ============
+        function calculateRiskScore(transaction) {
+            let risk = 15;
+            if (transaction.amount > 5000) risk += 20;
+            if (transaction.amount > 10000) risk += 25;
+            if (transaction.type === 'GOLD') risk += 10;
+            return Math.min(risk, 90);
+        }
+
+        function getRiskLevel(score) {
+            if (score < 30) return '🟢 LOW';
+            if (score < 60) return '🟡 MEDIUM';
+            if (score < 80) return '🟠 HIGH';
+            return '🔴 CRITICAL';
+        }
+
+        function showConsciousPause() {
+            const riskScore = calculateRiskScore(currentTransaction);
+            
+            document.getElementById('pauseMessage').textContent = 
+                `Ready to ${currentTransaction.type === 'PROFILE' ? 'update profile' : 'process transaction'}`;
+            
+            document.getElementById('riskFill').style.width = riskScore + '%';
+            document.getElementById('riskFill').textContent = riskScore + '%';
+            document.getElementById('riskText').textContent = getRiskLevel(riskScore);
+
+            let detailsHTML = `
+                <div class="detail-row">
+                    <span class="detail-label">Type:</span>
+                    <span class="detail-value">${currentTransaction.type}</span>
+                </div>
+            `;
+
+            if (currentTransaction.type === 'BILL') {
+                detailsHTML += `
+                    <div class="detail-row">
+                        <span class="detail-label">Biller:</span>
+                        <span class="detail-value">${currentTransaction.biller}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Amount:</span>
+                        <span class="detail-value">₹${currentTransaction.amount}</span>
+                    </div>
+                `;
+            } else if (currentTransaction.type === 'GOLD') {
+                detailsHTML += `
+                    <div class="detail-row">
+                        <span class="detail-label">Gold:</span>
+                        <span class="detail-value">${currentTransaction.goldType}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Amount:</span>
+                        <span class="detail-value">₹${currentTransaction.amount}</span>
+                    </div>
+                `;
+            } else if (currentTransaction.type === 'PROFILE') {
+                detailsHTML += `
+                    <div class="detail-row">
+                        <span class="detail-label">Name:</span>
+                        <span class="detail-value">${currentTransaction.name}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Action:</span>
+                        <span class="detail-value">Profile Update</span>
+                    </div>
+                `;
+            }
+
+            document.getElementById('transactionDetails').innerHTML = detailsHTML;
+            document.getElementById('editAmount').value = currentTransaction.amount || '';
+
+            pauseModal.classList.add('show');
+            addLog(`⏸️ PAUSE ACTIVATED: Risk ${riskScore}%`, 'warning');
+            addChatMessage('⏸️ Awaiting approval. Say APPROVE or REJECT', 'agent');
+            speakText(`Please confirm. Risk score is ${riskScore} percent. Say approve or reject.`);
+
+            listenForApproval();
+        }
+
+        function listenForApproval() {
+            const tempRecog = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            tempRecog.lang = 'en-US';
+            tempRecog.continuous = false;
+
+            tempRecog.onresult = (event) => {
+                let transcript = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    transcript += event.results[i][0].transcript.toLowerCase();
+                }
+
+                if (transcript.includes('approve') || transcript.includes('yes')) {
+                    addChatMessage('✓ APPROVED', 'user');
+                    approveTransaction();
+                } else if (transcript.includes('reject') || transcript.includes('no')) {
+                    addChatMessage('✗ REJECTED', 'user');
+                    rejectTransaction();
+                }
+            };
+
+            tempRecog.start();
+        }
+
+        function voiceEditAmount() {
+            const btn = event.target;
+            btn.textContent = '🎤 Listening...';
+            const tempRecog = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            tempRecog.lang = 'en-US';
+
+            tempRecog.onresult = (event) => {
+                let transcript = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    transcript += event.results[i][0].transcript;
+                }
+                const amount = transcript.match(/(\d+)/);
+                if (amount) {
+                    document.getElementById('editAmount').value = amount[1];
+                    speakText(`Amount changed to rupees ${amount[1]}`);
+                }
+                btn.textContent = '🎤 Voice';
+            };
+
+            tempRecog.start();
+        }
+
+        function approveTransaction() {
+            const editedAmount = document.getElementById('editAmount').value;
+            if (editedAmount && editedAmount !== currentTransaction.amount) {
+                currentTransaction.amount = parseInt(editedAmount);
+                addLog(`💰 Amount modified to ₹${editedAmount}`, 'info');
+            }
+
+            pauseModal.classList.remove('show');
+
+            addLog(`✅ APPROVED & PROCESSING`, 'success');
+            addChatMessage('✅ Processing your request...', 'agent');
+            speakText('Processing your request. Please wait.');
+
+            simulateExecution();
+        }
+
+        function rejectTransaction() {
+            pauseModal.classList.remove('show');
+            currentTransaction = null;
+
+            addLog(`❌ REJECTED`, 'error');
+            addChatMessage('❌ Transaction cancelled', 'agent');
+            speakText('Transaction cancelled.');
+        }
+
+        function simulateExecution() {
+            addLog(`🤲 Automation starting...`, 'info');
+            document.getElementById('progressPercent').textContent = '25%';
+            document.getElementById('progressText').textContent = 'Browser launching';
+
+            setTimeout(() => {
+                addLog(`✅ Form filled successfully`, 'success');
+                document.getElementById('progressPercent').textContent = '75%';
+                document.getElementById('progressText').textContent = 'Submitting';
+
+                setTimeout(() => {
+                    const txnId = 'TXN-' + Math.random().toString(36).substring(7).toUpperCase();
+                    addLog(`✅ SUCCESS: ${txnId}`, 'success');
+                    document.getElementById('progressPercent').textContent = '100%';
+                    document.getElementById('progressText').textContent = 'Completed';
+
+                    addChatMessage(`✅ Transaction completed! ID: ${txnId}`, 'agent');
+                    speakText(`Success. Transaction ${txnId} completed.`);
+
+                    addTransaction(txnId);
+                    currentTransaction = null;
+
+                    setTimeout(() => {
+                        document.getElementById('progressPercent').textContent = '0%';
+                        document.getElementById('progressText').textContent = 'Idle';
+                    }, 2000);
+                }, 1500);
+            }, 1500);
+        }
+
+        // ============ PROFILE FUNCTIONS ============
+        function updateProfileDisplay() {
+            document.getElementById('displayName').textContent = userProfile.name;
+            document.getElementById('displayPhone').textContent = userProfile.phone;
+            document.getElementById('displayEmail').textContent = userProfile.email;
+}
+
+        // ============ UI FUNCTIONS ============
+        function addChatMessage(text, type) {
+            const msg = document.createElement('div');
+            msg.className = `chat-message msg-${type}`;
+            msg.textContent = text;
+            chatBox.appendChild(msg);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function addLog(message, type) {
+            const log = document.createElement('div');
+            log.className = `log-item log-${type}`;
+            const time = new Date().toLocaleTimeString();
+            log.innerHTML = `<span style="color: #aaa;">[${time}]</span> ${message}`;
+            systemLogs.appendChild(log);
+            systemLogs.scrollTop = systemLogs.scrollHeight;
+        }
+
+        function addTransaction(txnId) {
+            const entry = document.createElement('div');
+            entry.className = 'log-item log-success';
+
+            const type = currentTransaction?.type || 'UNKNOWN';
+            const amount = (currentTransaction?.amount !== undefined && currentTransaction?.amount !== null) ? `₹${currentTransaction.amount}` : '₹?';
+            const who = userProfile?.name ? userProfile.name : 'User';
+
+            let ref = '';
+            if (type === 'BILL') ref = currentTransaction?.biller ? `Biller: ${currentTransaction.biller}` : 'Biller: ?';
+            else if (type === 'GOLD') ref = currentTransaction?.goldType ? `Gold: ${currentTransaction.goldType}` : 'Gold: ?';
+            else if (type === 'PROFILE') ref = 'Profile update';
+
+            entry.innerHTML = `
+                <strong>${txnId}</strong>
+                • <span style="color:#00d4ff">${type}</span>
+                • <span style="color:#00ff64">${amount}</span>
+                • ${ref}
+                • ${who}
+                • ${currentTransaction?.timestamp || new Date().toLocaleTimeString()}
+            `;
+
+            const hist = document.getElementById('transactionHistory');
+            hist.appendChild(entry);
+            hist.scrollTop = hist.scrollHeight;
+        }
+    </script>
+</body>
+</html>
